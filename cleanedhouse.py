@@ -22,23 +22,23 @@ meanprice = sum(test_price)/len(test_price) #calculate mean of all y values
 train_features = ["Avg. Area Income", "Avg. Area House Age", "Avg. Area Number of Rooms", "Avg. Area Number of Bedrooms", "Area Population"]
 
 lamda = [0,0.001,0.01,0.1,1,10,100,1000, 10000,100000,1000000, 10 ** 7, 10 ** 8, 10 ** 9] #parameters for lasso and ridge 
-mseridge ={}
-lasmse = {}
-lascofs = {}
-ridgecofs = {}
+mseridge ={} #Coefficients- MSE values for ridge regression comparison.
+lasmse = {} #dictionary of Coefficients- MSE for lasso regression comparison.
+lascofs = {} #coefficents collected from Lasso regression for different lambda values.
+ridgecofs = {} # coefficients collected from Ridge regression for different lambda values.
 
 
 def standardscale(train, valid): #z-score normalization
-    mean = train.mean(axis=0)
-    std = train.std(axis=0)
+    mean = train.mean(axis=0) #calculating mean of the training data
+    std = train.std(axis=0) #calculating the standard deviation for train data
 
-    trainscaled = (train - mean)/std
+    trainscaled = (train - mean)/std 
     validscaled = (valid - mean)/std
 
     return trainscaled, validscaled
     
 
-def outliers(train, valid):
+def outliers(train, valid): #removing all outliers which are outside 50% + upper quartile and lower quratile - 50%
     q1 = train.quantile(0.25)
     q3 = train.quantile(0.75)
 
@@ -50,7 +50,7 @@ def outliers(train, valid):
     valid = valid.clip(lowerbound,upperbound)
     
 
-def trainmodel(rooms,meanroom,price,meanprice): #called Ordinary Least Squares (OLS)
+def trainmodel(rooms,meanroom,price,meanprice): #called Ordinary Least Squares (OLS), training for linear regression
     sumsone = 0
     sumstwo = 0
     for i in range(0,len(rooms)):
@@ -60,7 +60,7 @@ def trainmodel(rooms,meanroom,price,meanprice): #called Ordinary Least Squares (
     c = meanprice - (m * meanroom)
     return m, c
 
-def testmodel(test_price, m, c,test_rooms):
+def testmodel(test_price, m, c,test_rooms): #testing model against test set
     n = len(test_price)
     testsum = 0 #accumulator for sum of (yi - ymean)^2, to calculate MSE
     testsumMAE = 0
@@ -78,7 +78,7 @@ def testmodel(test_price, m, c,test_rooms):
 
     return mse, rmse, mae, r2
 
-def Multipleregression(x,y): # implementation of Normal Equation
+def Multipleregression(x,y): # implementation of Normal Equation for multiple regression
     n_rows = x.shape[0]
     ones = np.ones((n_rows, 1))
     X= np.concatenate((ones, x), axis=1)
@@ -90,7 +90,7 @@ def Multipleregression(x,y): # implementation of Normal Equation
     
     return bhat
 
-def testmultiple(b, testrooms, testprice):
+def testmultiple(b, testrooms, testprice): #testing Multiple regression and outputting errors.
     n_rows = testrooms.shape[0]
     ones = np.ones((n_rows, 1))
     testrooms = np.concatenate((ones, testrooms), axis=1)
@@ -113,7 +113,7 @@ def testmultiple(b, testrooms, testprice):
 
     return mae, mse, rmse,r2
 #lasso
-def lasso(cofs,test_features, actual_price, lamda):
+def lasso(cofs,test_features, actual_price, lamda): #Lasso regression using coordinate descent. Softthresholding included here
     coefficents = cofs.copy()
     X_raw = test_features
     ones = np.ones((X_raw.shape[0], 1))
@@ -125,7 +125,7 @@ def lasso(cofs,test_features, actual_price, lamda):
 
         p_i = np.dot(X_with_intercept[:,i], presidual)
         z_i = np.sum(X_with_intercept[:, i]**2) #z_i is the "denominator" (the squared length of the column)
-        if i == 0:
+        if i == 0: # punishing coefficents 
             coefficents[i] = p_i / z_i
         else:
             if p_i > (lamda):
@@ -139,7 +139,7 @@ def lasso(cofs,test_features, actual_price, lamda):
         
     return coefficents
 
-def ridgeregression(lamda,x,y):
+def ridgeregression(lamda,x,y): #Implementing Ridge regression
     n_rows = x.shape[0]
     ones = np.ones((n_rows, 1))
     X_mat= np.concatenate((ones, x), axis=1)
@@ -166,7 +166,7 @@ sumqmae = 0
 sumqrmse = 0
 sumqr2  = 0
 
-for i in range(k):
+for i in range(k): #K-Fold, splitting data into multiple folds/sections for testing and learning
     valid = folds[i].copy()
     train = pd.concat([folds[noti] for noti in range(k) if noti != i]).copy()
     
@@ -244,6 +244,8 @@ for i in range(k):
         lascofs[l] = cofs[1:] # saving cofficients for graph
         
 
+
+#printing errors
 print("Ridge mSE:",mseridge)
 print("Lasso MSE",lasmse)
 print("COFS:", lascofs)
